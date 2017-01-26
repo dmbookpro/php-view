@@ -26,10 +26,8 @@ class PhpRenderer // implements \ArrayAccess
 	 */
 	protected $path = '';
 
-	protected $decorators = [];
 	protected $layout = '';
 	protected $depth = 0;
-
 	protected $current = null;
 	protected $current_layout = null;
 	protected $current_globals = null;
@@ -37,10 +35,11 @@ class PhpRenderer // implements \ArrayAccess
 	/**
 	 * Constructor.
 	 */
-	public function __construct($path = '', array $globals = [])
+	public function __construct($path = '', array $globals = [], $layout = null)
 	{
 		$this->path = $path ? realpath(rtrim($path, DIRECTORY_SEPARATOR)) . DIRECTORY_SEPARATOR : '';
 		$this->globals = $globals;
+		$this->layout = $layout;
 	}
 
 ///////////////////////////////////////////////////////////////////////////////
