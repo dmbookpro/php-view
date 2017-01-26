@@ -1,0 +1,14 @@
+{
+	"name": "rlanvin/php-view",
+	"type" : "library",
+	"description": "Simple php view renderer",
+	"license": "MIT",
+	"require": {
+
+	},
+	"autoload": {
+			"psr-4": {
+					"View\\": "src"
+			}
+	}
+}
