@@ -106,7 +106,7 @@ class PhpRendererTest extends PHPUnit_Framework_TestCase
 
 	public function testRenderCustomLayout()
 	{
-		file_put_contents($this->file, '<?$this->setLayout("'.$this->file2.'")?>Hello world');
+		file_put_contents($this->file, '<?php $this->setLayout("'.$this->file2.'")?>Hello world');
 		file_put_contents($this->file2, '<html><?=$_content?></html>');
 
 		$view = new PhpRenderer();
@@ -116,7 +116,7 @@ class PhpRendererTest extends PHPUnit_Framework_TestCase
 
 	public function testRenderCustomLayoutDoesntAffectDefaultLayout()
 	{
-		file_put_contents($this->file, '<?$this->setLayout("'.$this->file2.'")?>Hello world');
+		file_put_contents($this->file, '<?php $this->setLayout("'.$this->file2.'")?>Hello world');
 		file_put_contents($this->file2, '<html><?=$_content?></html>');
 		file_put_contents($this->file3, 'Hello world');
 		file_put_contents($this->file4, '<b><?=$_content?></b>');
@@ -129,7 +129,7 @@ class PhpRendererTest extends PHPUnit_Framework_TestCase
 
 	public function testPassVariablesToLayout()
 	{
-		file_put_contents($this->file, '<? $this->setGlobal("title","foobar")?>Hello world');
+		file_put_contents($this->file, '<?php $this->setGlobal("title","foobar")?>Hello world');
 		file_put_contents($this->file2, '<html><?=$title?> <?=$_content?></html>');
 
 		$view = new PhpRenderer();
