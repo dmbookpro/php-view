@@ -176,4 +176,14 @@ class PhpRenderer // implements \ArrayAccess
 		$this->_file = null;
 		return ob_get_clean();
 	}
+
+	public function e($string)
+	{
+		return htmlspecialchars($string, ENT_QUOTES, 'UTF-8');
+	}
+
+	public function j($string)
+	{
+		return addslashes($string);
+	}
 }
