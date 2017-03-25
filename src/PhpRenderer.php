@@ -177,11 +177,20 @@ class PhpRenderer // implements \ArrayAccess
 		return ob_get_clean();
 	}
 
+///////////////////////////////////////////////////////////////////////////////
+// Quick helpers
+
+	/**
+	 * Escape a string for HTML to avoid XSS.
+	 */
 	public function e($string)
 	{
-		return htmlspecialchars($string, ENT_QUOTES, 'UTF-8');
+		return htmlspecialchars($string, ENT_COMPAT | ENT_HTML5, 'UTF-8');
 	}
 
+	/**
+	 * Escape a string for JS
+	 */
 	public function j($string)
 	{
 		return addslashes($string);

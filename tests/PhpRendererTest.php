@@ -136,4 +136,34 @@ class PhpRendererTest extends PHPUnit_Framework_TestCase
 		$view->setLayout($this->file2);
 		$this->assertEquals('<html>foobar Hello world</html>', $view->render($this->file));
 	}
+
+///////////////////////////////////////////////////////////////////////////////
+
+	public function escapedStrings()
+	{
+		return [
+			["<strong>I'm</strong>", "&lt;strong&gt;I'm&lt;/strong&gt;", "<strong>I\'m</strong>"],
+			['"', '&quot;', '\"'],
+			['é', 'é', 'é'],
+			['&', '&amp;', '&']
+		];
+	}
+
+	/**
+	 * @dataProvider escapedStrings
+	 */
+	public function testEHelper($original, $escaped)
+	{
+		$view = new PhpRenderer();
+		$this->assertEquals($escaped, $view->e($original));
+	}
+
+	/**
+	 * @dataProvider escapedStrings
+	 */
+	public function testJHelper($original, $ignore, $escaped)
+	{
+		$view = new PhpRenderer();
+		$this->assertEquals($escaped, $view->j($original));
+	}
 }
