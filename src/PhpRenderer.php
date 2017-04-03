@@ -69,6 +69,11 @@ class PhpRenderer
 	protected $current_globals = null;
 
 	/**
+	 * @var array An array of helpers (callable)
+	 */
+	protected $helpers = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $path The path where the templates are stored.
@@ -77,9 +82,21 @@ class PhpRenderer
 	 */
 	public function __construct($path = '', array $globals = [], $layout = null)
 	{
+		if ( ! is_string($path) ) {
+			throw new \InvalidArgumentException('path must be a string');
+		}
+
 		$this->path = $path ? realpath(rtrim($path, DIRECTORY_SEPARATOR)) . DIRECTORY_SEPARATOR : '';
 		$this->globals = $globals;
 		$this->layout = $layout;
+
+		$this->addHelper('e', function($string) {
+			return htmlspecialchars($string, ENT_COMPAT | ENT_HTML5, 'UTF-8');
+		});
+
+		$this->addHelper('j', function($string) {
+			return addslashes($string);
+		});
 	}
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -124,6 +141,22 @@ class PhpRenderer
 	public function getGlobals()
 	{
 		return array_merge($this->globals, $this->current_globals);
+	}
+
+	public function __get($name)
+	{
+		if ( array_key_exists($name, $this->current_globals) ) {
+			return $this->current_globals[$name];
+		}
+		elseif ( array_key_exists($name, $this->globals) ) {
+			return $this->globals[$name];
+		}
+		return null;
+	}
+
+	public function __set($name, $value)
+	{
+		return $this->setGlobal($name, $value);
 	}
 
 	public function setLayout($template)
@@ -188,6 +221,9 @@ class PhpRenderer
 		return $content;
 	}
 
+	protected $_file = null;
+	protected $_data = null;
+
 	protected function evaluate($file, array $data = [])
 	{
 		if ( array_key_exists('this', $data) ) {
@@ -209,21 +245,20 @@ class PhpRenderer
 	}
 
 ///////////////////////////////////////////////////////////////////////////////
-// Quick helpers
+// Helpers
 
-	/**
-	 * Escape a string for HTML to avoid XSS.
-	 */
-	public function e($string)
+	public function addHelper($name, callable $helper)
 	{
-		return htmlspecialchars($string, ENT_COMPAT | ENT_HTML5, 'UTF-8');
+		$this->helpers[$name] = \Closure::bind($helper, $this);
+		return $this;
 	}
 
-	/**
-	 * Escape a string for JS
-	 */
-	public function j($string)
+	public function __call($name, $arguments)
 	{
-		return addslashes($string);
+		if ( ! array_key_exists($name, $this->helpers) ) {
+			throw new \BadMethodCallException("Unknown helper: $name - loaded helpers are: ".implode(', ',array_keys($this->helpers)));
+		}
+
+		return call_user_func_array($this->helpers[$name], $arguments);
 	}
 }

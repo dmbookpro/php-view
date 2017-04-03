@@ -1,0 +1,1 @@
+<strong><?=$_content?></strong>

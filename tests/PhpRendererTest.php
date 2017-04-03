@@ -4,140 +4,147 @@ use View\PhpRenderer;
 
 class PhpRendererTest extends PHPUnit_Framework_TestCase
 {
-	protected $file = '';
-
-	public function setUp()
+	public function getRenderer()
 	{
-		$this->file = '/tmp/'.uniqid().'.php';
-		$this->file2 = '/tmp/'.uniqid().'.php';
-		$this->file3 = '/tmp/'.uniqid().'.php';
-		$this->file4 = '/tmp/'.uniqid().'.php';
-		touch($this->file);
-		touch($this->file2);
-		touch($this->file3);
-		touch($this->file4);
-	}
-
-	public function tearDown()
-	{
-		unlink($this->file);
-		unlink($this->file2);
-		unlink($this->file3);
-		unlink($this->file4);
+		return new PhpRenderer(__DIR__.'/templates');
 	}
 
 ////////////////////////////////////////////////////////////////////////////////
 
+	/**
+	 * @expectedException RuntimeException
+	 */
 	public function testRenderBadFile()
 	{
 		$view = new PhpRenderer();
-		try {
-			$view->render('Non existant file');
-			$this->fail('Expected exception has not been thrown');
-		} catch ( RuntimeException $e ) {}
+		$view->render('Non existant file');
+	}
+
+	public function testPath()
+	{
+		$view = new PhpRenderer();
+		$this->assertNotEmpty($view->render(__DIR__.'/templates/helloworld.php'));
+
+		$view = new PhpRenderer(__DIR__);
+		$this->assertNotEmpty($view->render('templates/helloworld.php'));
+
+		$view = new PhpRenderer(__DIR__.'/templates');
+		$this->assertNotEmpty($view->render('helloworld.php'));
+
+		$view = new PhpRenderer(__DIR__.'/templates/');
+		$this->assertNotEmpty($view->render('helloworld.php'));
 	}
 
 	public function testRender()
 	{
-		file_put_contents($this->file, '<?=$hello?>');
+		$template = __DIR__.'/templates/hello.php';
+
 		$view = new PhpRenderer();
 
-		$this->assertEmpty($view->render($this->file, ['hello' => '']));
-		$this->assertEquals('World',$view->render($this->file, ['hello' => 'World']));
+		$this->assertEquals('Hello, World!',$view->render($template));
+		$this->assertEquals('Hello, Sean!',$view->render($template, ['hello' => 'Sean']));
 	}
 
 	public function testRenderWithGlobals()
 	{
-		file_put_contents($this->file, '<?=$hello?>');
-		$view = new PhpRenderer();
-		$view->setGlobals(['hello' => 'World']);
+		$template = __DIR__.'/templates/hello.php';
 
-		$this->assertEquals('World', $view->render($this->file));
-		$this->assertEquals('World!',$view->render($this->file, ['hello' => 'World!']));
+		$view = new PhpRenderer();
+		$view->setGlobals(['hello' => 'John']);
+
+		$this->assertEquals('Hello, John!', $view->render($template));
+		$this->assertEquals('Hello, Sean!',$view->render($template, ['hello' => 'Sean']));
 	}
 
 	public function testRenderRecursive()
 	{
-		file_put_contents($this->file, '<?=$this->render("'.$this->file2.'")?>');
-		file_put_contents($this->file2, '<?=isset($hello)?$hello:""?>');
+		$template = 'render.php';
 
-		$view = new PhpRenderer();
-		$this->assertEquals('', $view->render($this->file));
-		$this->assertEquals('', $view->render($this->file, ['hello' => 'World']), 'Local variables is not passed to subtemplates');
+		$view = $this->getRenderer();
+		$this->assertEquals('Hello, World!', $view->render($template));
+		$this->assertEquals('Hello, World!', $view->render($template, ['hello' => 'John']), 'Local variables is not passed to subtemplates');
 
-		$view->setGlobals(['hello' => 'World']);
-		$this->assertEquals('World', $view->render($this->file), 'Globals variables are passed to subtemplates');
+		$view->setGlobals(['hello' => 'John']);
+		$this->assertEquals('Hello, John!', $view->render($template), 'Globals variables are passed to subtemplates');
 	}
 
 	public function testRenderLayout()
 	{
-		file_put_contents($this->file, 'Hello <?=$_content?>!');
-		file_put_contents($this->file2, '<?=$hello?>');
+		$template = 'hello.php';
+		$layout = 'layout.php';
 
-		$view = new PhpRenderer();
-		$view->setLayout($this->file);
-		$this->assertEquals('Hello John!', $view->render($this->file2, ['hello' => 'John']));
+		$view = $this->getRenderer();
+		$view->setLayout($layout);
 
-		$this->assertEquals('Hello John!', $view->render($this->file2, ['hello' => 'John']), 'Re-rendering keeps the layout settings');
+		$this->assertEquals('<strong>Hello, John!</strong>', $view->render($template, ['hello' => 'John']));
+		$this->assertEquals('<strong>Hello, John!</strong>', $view->render($template, ['hello' => 'John']), 'Re-rendering keeps the layout settings');
 	}
 
 	public function testRenderLayoutAndRecursive()
 	{
-		file_put_contents($this->file, 'Hello <?=$this->render("'.$this->file2.'")?>!');
-		file_put_contents($this->file2, '<?=isset($hello)?$hello:""?>');
-		file_put_contents($this->file3, '<html><?=$_content?></html>');
+		$template = 'render.php';
+		$layout = 'layout.php';
 
-		$view = new PhpRenderer();
-		$view->setGlobals(['hello' => 'World']);
-		$view->setLayout($this->file3);
+		$view = $this->getRenderer();
+		$view->setGlobals(['hello' => 'Sean']);
+		$view->setLayout($layout);
 
-		$this->assertEquals('<html>Hello World!</html>', $view->render($this->file));
+		$this->assertEquals('<strong>Hello, Sean!</strong>', $view->render($template));
 	}
 
 	public function testRenderLayoutRendersItself()
 	{
-		file_put_contents($this->file, 'Hello world');
+		$template = 'helloworld.php';
+		$view = $this->getRenderer();
+		$view->setLayout($template);
 
-		$view = new PhpRenderer();
-		$view->setLayout($this->file);
-
-		$this->assertEquals('Hello world', $view->render($this->file));
+		$this->assertEquals('Hello, World!', $view->render($template));
 	}
 
 	public function testRenderCustomLayout()
 	{
-		file_put_contents($this->file, '<?php $this->setLayout("'.$this->file2.'")?>Hello world');
-		file_put_contents($this->file2, '<html><?=$_content?></html>');
+		$template = 'setlayout.php';
 
-		$view = new PhpRenderer();
+		$view = $this->getRenderer();
 
-		$this->assertEquals('<html>Hello world</html>', $view->render($this->file));
+		$this->assertEquals('<strong>Hello, World!</strong>', $view->render($template));
 	}
 
 	public function testRenderCustomLayoutDoesntAffectDefaultLayout()
 	{
-		file_put_contents($this->file, '<?php $this->setLayout("'.$this->file2.'")?>Hello world');
-		file_put_contents($this->file2, '<html><?=$_content?></html>');
-		file_put_contents($this->file3, 'Hello world');
-		file_put_contents($this->file4, '<b><?=$_content?></b>');
+		$view = $this->getRenderer();
+		$view->setLayout('layout2.php');
 
-		$view = new PhpRenderer();
-		$view->setLayout($this->file4);
-		$this->assertEquals('<html>Hello world</html>', $view->render($this->file));
-		$this->assertEquals('<b>Hello world</b>', $view->render($this->file3));
+		$this->assertEquals('<strong>Hello, World!</strong>', $view->render('setlayout.php'));
+		$this->assertEquals('<html>Hello, World!</html>', $view->render('hello.php'));
 	}
 
 	public function testPassVariablesToLayout()
 	{
-		file_put_contents($this->file, '<?php $this->setGlobal("title","foobar")?>Hello world');
-		file_put_contents($this->file2, '<html><?=$title?> <?=$_content?></html>');
+		$view = $this->getRenderer();
+		$view->setLayout('layout3.php');
+		$this->assertEquals(
+			"<html>\n<head>\n<title>Greetings</title>\n</head>\n<body>Hello, World!</body>\n</html>",
+			$view->render('setglobal.php', ['title' => 'Greetings'])
+		);
 
-		$view = new PhpRenderer();
-		$view->setLayout($this->file2);
-		$this->assertEquals('<html>foobar Hello world</html>', $view->render($this->file));
 	}
 
 ///////////////////////////////////////////////////////////////////////////////
+// Helpers
+
+	public function addHelper()
+	{
+		$view = $this->getRenderer();
+		$view->addHelper('answer', function() {
+			return '42';
+		});
+
+		$this->assertEquals('42', $view->answer());
+	}
+
+///////////////////////////////////////////////////////////////////////////////
+// Defaut helpers
 
 	public function escapedStrings()
 	{
