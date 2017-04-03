@@ -19,30 +19,61 @@ namespace View;
  * - Symfony Templating Component https://github.com/symfony/templating
  *
  * The purpose of this class is to have something extremely simple, for very simple
- * uses cases, without all the bells and whistle.
+ * uses cases, without all the bells and whistle of a full templating engine.
  */
-class PhpRenderer // implements \ArrayAccess
+class PhpRenderer
 {
 	static public $CONTENT_NAME = '_content';
 
 	/**
-	 * @var array global variables accessible by every templates
+	 * @var array Global variables accessible by every templates
 	 */
 	protected $globals = [];
 
 	/**
-	 * @var string
+	 * @var string Path where the templates are stored
 	 */
 	protected $path = '';
 
+	/**
+	 * @var string Name of the layout file, to decorate the templates with
+	 */
 	protected $layout = '';
+
+	/**
+	 * @internal
+	 * @var int Current rendering depth. Each call to render() increases the value.
+	 * The layout will only be renderer after the higher template (depth=1) is done
+	 */
 	protected $depth = 0;
+
+	/**
+	 * @internal
+	 * @var string Store the current high-level template being renderered
+	 */
 	protected $current = null;
+
+	/**
+	 * @internal
+	 * @var string Store the layout from the current template. Calling setLayout()
+	 * from within a template will only change this, and not the global layout
+	 * for any subsequent rendering
+	 */
 	protected $current_layout = null;
+
+	/**
+	 * @internal
+	 * @var array Store the current globals. Calling setGlobals() from within
+	 * a template will only change this, and not the global globals array.
+	 */
 	protected $current_globals = null;
 
 	/**
 	 * Constructor.
+	 *
+	 * @param string $path The path where the templates are stored.
+	 * @param array $globals An array of global variables (can also use setGlobals)
+	 * @param string $layout The name of the layout file to be used (null if no layout)
 	 */
 	public function __construct($path = '', array $globals = [], $layout = null)
 	{

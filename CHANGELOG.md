@@ -14,5 +14,5 @@
 
 - First release
 
-[Unreleased]: https://github.com/dmbookpro/php-view/compare/v1.1.1...HEAD
-[1.1.0]: https://github.com/dmbookpro/php-view/compare/v1.0.0...v1.1.1
+[Unreleased]: https://github.com/dmbookpro/php-view/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/dmbookpro/php-view/compare/v1.0.0...v1.1.0
